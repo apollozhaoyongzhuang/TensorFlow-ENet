@@ -7,6 +7,9 @@ import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 slim = tf.contrib.slim
 
 #============INPUT ARGUMENTS================
@@ -14,7 +17,7 @@ flags = tf.app.flags
 
 #Directories
 flags.DEFINE_string('dataset_dir', './dataset', 'The dataset directory to find the train, validation and test images.')
-flags.DEFINE_string('checkpoint_dir', './log/original', 'The checkpoint directory to restore your mode.l')
+flags.DEFINE_string('checkpoint_dir', './checkpoint', 'The checkpoint directory to restore your mode.l')
 flags.DEFINE_string('logdir', './log/original_test', 'The log directory for event files created during test evaluation.')
 flags.DEFINE_boolean('save_images', True, 'If True, saves 10 images to your logdir for visualization.')
 
@@ -58,6 +61,10 @@ checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
 #Dataset directories
 image_files = sorted([os.path.join(dataset_dir, 'test', file) for file in os.listdir(dataset_dir + "/test") if file.endswith('.png')])
 annotation_files = sorted([os.path.join(dataset_dir, "testannot", file) for file in os.listdir(dataset_dir + "/testannot") if file.endswith('.png')])
+
+# #Dataset directories
+# image_files = sorted([os.path.join(dataset_dir, 'test', file) for file in os.listdir(dataset_dir + "/test") if file.endswith('.png')])
+# annotation_files = sorted([os.path.join(dataset_dir, "testannot", file) for file in os.listdir(dataset_dir + "/testannot") if file.endswith('.png')])
 
 num_batches_per_epoch = len(image_files) / batch_size
 num_steps_per_epoch = num_batches_per_epoch
@@ -151,16 +158,18 @@ def run():
                     logging.info('Epoch: %s/%s', step / num_batches_per_epoch + 1, num_epochs)
                     logging.info('Current Streaming Accuracy: %.4f', accuracy_value)
                     logging.info('Current Streaming Mean IOU: %.4f', mean_IOU_value)
-                    
+
                 #Compute summaries every 10 steps and continue evaluating
                 if step % 10 == 0:
                     test_accuracy, test_mean_IOU, test_per_class_accuracy = eval_step(sess, metrics_op = metrics_op, global_step = sv.global_step)
                     summaries = sess.run(my_summary_op)
                     sv.summary_computed(sess, summaries)
-                    
+
                 #Otherwise just run as per normal
                 else:
                     test_accuracy, test_mean_IOU, test_per_class_accuracy = eval_step(sess, metrics_op = metrics_op, global_step = sv.global_step)
+                    # Show end of evaluation
+                    # logging.info('yong!')
 
             #At the end of all the evaluation, show the final accuracy
             logging.info('Final Streaming Accuracy: %.4f', test_accuracy)
@@ -179,7 +188,7 @@ def run():
                 logging.info('Saving the images now...')
                 predictions_val, annotations_val = sess.run([predictions, annotations])
 
-                for i in xrange(10):
+                for i in range(10):
                     predicted_annotation = predictions_val[i]
                     annotation = annotations_val[i]
 
@@ -190,4 +199,7 @@ def run():
                     plt.savefig(photo_dir+"/image_" + str(i))
 
 if __name__ == '__main__':
+    time_start = time.time()
     run()
+    time_end = time.time()
+    print('totally cost (second)', time_end - time_start)

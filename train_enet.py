@@ -8,6 +8,8 @@ import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 slim = tf.contrib.slim
 
 #==============INPUT ARGUMENTS==================
@@ -30,7 +32,7 @@ flags.DEFINE_integer('num_epochs_before_decay', 100, 'The number of epochs befor
 flags.DEFINE_float('weight_decay', 2e-4, "The weight decay for ENet convolution layers.")
 flags.DEFINE_float('learning_rate_decay_factor', 1e-1, 'The learning rate decay factor.')
 flags.DEFINE_float('initial_learning_rate', 5e-4, 'The initial learning rate for your training.')
-flags.DEFINE_string('weighting', "MFB", 'Choice of Median Frequency Balancing or the custom ENet class weights.')
+flags.DEFINE_string('weighting', "MFB", 'Choice of Median Frequency Balancing or the custom ENet class weights.')  # ENET   MFB
 
 #Architectural changes
 flags.DEFINE_integer('num_initial_blocks', 1, 'The number of initial blocks to use in ENet.')
@@ -71,13 +73,22 @@ photo_dir = os.path.join(FLAGS.logdir, "images")
 dataset_dir = FLAGS.dataset_dir
 logdir = FLAGS.logdir
 
-#===============PREPARATION FOR TRAINING==================
+#===============PREPARATION FOR TRAINING==================Cityscapes_trainannot
 #Get the images into a list
 image_files = sorted([os.path.join(dataset_dir, 'train', file) for file in os.listdir(dataset_dir + "/train") if file.endswith('.png')])
 annotation_files = sorted([os.path.join(dataset_dir, "trainannot", file) for file in os.listdir(dataset_dir + "/trainannot") if file.endswith('.png')])
 
 image_val_files = sorted([os.path.join(dataset_dir, 'val', file) for file in os.listdir(dataset_dir + "/val") if file.endswith('.png')])
 annotation_val_files = sorted([os.path.join(dataset_dir, "valannot", file) for file in os.listdir(dataset_dir + "/valannot") if file.endswith('.png')])
+
+
+# #Get the images into a list
+# image_files = sorted([os.path.join(dataset_dir, 'Cityscapes_train', file) for file in os.listdir(dataset_dir + "/Cityscapes_train") if file.endswith('.png')])
+# annotation_files = sorted([os.path.join(dataset_dir, "Cityscapes_trainannot", file) for file in os.listdir(dataset_dir + "/Cityscapes_trainannot") if file.endswith('.png')])
+#
+# image_val_files = sorted([os.path.join(dataset_dir, 'Cityscapes_val', file) for file in os.listdir(dataset_dir + "/Cityscapes_val") if file.endswith('.png')])
+# annotation_val_files = sorted([os.path.join(dataset_dir, "Cityscapes_valannot", file) for file in os.listdir(dataset_dir + "/Cityscapes_valannot") if file.endswith('.png')])
+
 
 if combine_dataset:
     image_files += image_val_files
@@ -92,12 +103,14 @@ decay_steps = int(num_epochs_before_decay * num_steps_per_epoch)
 #Median frequency balancing class_weights
 if weighting == "MFB":
     class_weights = median_frequency_balancing()
-    print "========= Median Frequency Balancing Class Weights =========\n", class_weights
+    print('========= Median Frequency Balancing Class Weights =========\n', class_weights)
 
 #Inverse weighing probability class weights
 elif weighting == "ENET":
     class_weights = ENet_weighing()
-    print "========= ENet Class Weights =========\n", class_weights
+    print('========= ENet Class Weights =========\n', class_weights)
+
+
 
 #============= TRAINING =================
 def weighted_cross_entropy(onehot_labels, logits, class_weights):
@@ -277,11 +290,12 @@ def run():
         my_summary_op = tf.summary.merge_all()
 
         #Define your supervisor for running a managed session. Do not run the summary_op automatically or else it will consume too much memory
+        # init = tf.global_variables_initializer()
         sv = tf.train.Supervisor(logdir=logdir, summary_op=None, init_fn=None)
 
         # Run the managed session
         with sv.managed_session() as sess:
-            for step in xrange(int(num_steps_per_epoch * num_epochs)):
+            for step in range(int(num_steps_per_epoch * num_epochs)):
                 #At the start of every epoch, show the vital information:
                 if step % num_batches_per_epoch == 0:
                     logging.info('Epoch %s/%s', step/num_batches_per_epoch + 1, num_epochs)
@@ -294,7 +308,7 @@ def run():
 
                     #Check the validation data only at every third of an epoch
                     if step % (num_steps_per_epoch / 3) == 0:
-                        for i in xrange(len(image_val_files) / eval_batch_size):
+                        for i in range(int(len(image_val_files) / eval_batch_size)):
                             validation_accuracy, validation_mean_IOU = eval_step(sess, metrics_op_val)
 
                     summaries = sess.run(my_summary_op)
@@ -323,7 +337,7 @@ def run():
                 logging.info('Saving the images now...')
                 predictions_value, annotations_value = sess.run([predictions_val, annotations_val])
 
-                for i in xrange(eval_batch_size):
+                for i in range(eval_batch_size):
                     predicted_annotation = predictions_value[i]
                     annotation = annotations_value[i]
 

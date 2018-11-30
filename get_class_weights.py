@@ -1,12 +1,13 @@
 import numpy as np
 import os
+
 from scipy.misc import imread
 import ast
 
 image_dir = "./dataset/trainannot"
 image_files = [os.path.join(image_dir, file) for file in os.listdir(image_dir) if file.endswith('.png')]
 
-def ENet_weighing(image_files=image_files, num_classes=12):
+def ENet_weighing(image_files=image_files, num_classes=31):
     '''
     The custom class weighing function as seen in the ENet paper.
 
@@ -19,14 +20,14 @@ def ENet_weighing(image_files=image_files, num_classes=12):
     '''
     #initialize dictionary with all 0
     label_to_frequency = {}
-    for i in xrange(num_classes):
+    for i in range(num_classes):
         label_to_frequency[i] = 0
 
-    for n in xrange(len(image_files)):
+    for n in range(len(image_files)):
         image = imread(image_files[n])
 
         #For each label in each image, sum up the frequency of the label and add it to label_to_frequency dict
-        for i in xrange(num_classes):
+        for i in range(num_classes):
             class_mask = np.equal(image, i)
             class_mask = class_mask.astype(np.float32)
             class_frequency = np.sum(class_mask)
@@ -45,7 +46,7 @@ def ENet_weighing(image_files=image_files, num_classes=12):
 
     return class_weights
 
-def median_frequency_balancing(image_files=image_files, num_classes=12):
+def median_frequency_balancing(image_files=image_files, num_classes=31):
     '''
     Perform median frequency balancing on the image files, given by the formula:
     f = Median_freq_c / total_freq_c
@@ -63,14 +64,14 @@ def median_frequency_balancing(image_files=image_files, num_classes=12):
     '''
     #Initialize all the labels key with a list value
     label_to_frequency_dict = {}
-    for i in xrange(num_classes):
+    for i in range(num_classes):
         label_to_frequency_dict[i] = []
 
-    for n in xrange(len(image_files)):
+    for n in range(len(image_files)):
         image = imread(image_files[n])
 
         #For each image sum up the frequency of each label in that image and append to the dictionary if frequency is positive.
-        for i in xrange(num_classes):
+        for i in range(num_classes):
             class_mask = np.equal(image, i)
             class_mask = class_mask.astype(np.float32)
             class_frequency = np.sum(class_mask)
